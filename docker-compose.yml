@@ -1,0 +1,116 @@
+version: "3.8"
+name: "netrunner_compose"
+
+services:
+
+# --------------------- [ Auth Database ] ---------------------
+  auth-database:
+    image: postgres:14
+    container_name: "auth-database"
+    volumes:
+      - userdata:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: "cube"
+      POSTGRES_USER: "cube"
+      POSTGRES_PASSWORD: "cube"
+    networks:
+      - auth-network
+
+
+# --------------------- [ Auth Server ] ---------------------
+  auth:
+    image: quay.io/keycloak/keycloak:22.0.1
+    container_name: "auth"
+    depends_on:
+      - auth-database
+    environment:
+      KEYCLOAK_ADMIN: "cube"
+      KEYCLOAK_ADMIN_PASSWORD: "cube"
+      KC_PROXY: edge
+      DB_VENDOR: POSTGRES
+      DB_ADDR: auth-database
+      DB_DATABASE: cube
+      DB_USER: cube
+      DB_SCHEMA: public
+      DB_PASSWORD: "cube"
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://auth-database:5432/cube
+      KC_DB_USERNAME: "cube"
+      KC_DB_PASSWORD: "cube"
+    command:
+      - start-dev
+      - --import-realm
+    volumes:
+      - ./realms:/opt/keycloak/data/import
+    networks:
+      - auth-network
+    restart: always
+
+# --------------------- [ Backend Database ] ---------------------
+  backend-database:
+    container_name: "backend-database"
+    image: postgres:14
+    environment:
+      POSTGRES_USER: "cube"
+      POSTGRES_PASSWORD: "cube"
+    volumes:
+      - buisnessdata:/var/lib/postgresql/data
+    networks:
+      - backend-network
+    restart: always
+
+# --------------------- [ Backend ] ---------------------
+  backend:
+    container_name: "backend"
+    image: ge0rg25/cube-backend:latest
+    depends_on:
+      - auth
+      - backend-database
+    environment:
+      POSTGRES_HOST: backend-database
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: "cube"
+      POSTGRES_PASSWORD: "cube"
+      KEYCLOAK_SECRET: 6q5cjV4TwAGFyCvwz2NwQ7RyvbaKIUh8
+      KEYCLOAK_HOST: "auth"
+      KEYCLOAK_PORT: 8080
+    networks:
+      - backend-network
+      - auth-network
+    restart: always
+
+# --------------------- [ Frontend | Reverse Proxy] ---------------------
+  web-server:
+    container_name: "web-server"
+    ports:
+      - "80:80"
+      - "443:443"
+    image: nginx:latest
+    depends_on:
+      - backend
+      - auth
+    restart: always
+    networks:
+      - backend-network
+      - auth-network
+    volumes:
+      - etc-letsencrypt:/etc/letsencrypt
+      - www-html:/var/www/html
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf
+      - ./frontend:/usr/share/nginx/html
+
+
+
+networks:
+  backend-network:
+  auth-network:
+
+volumes:
+  buisnessdata:
+  userdata:
+  www-html:
+    name: "www-html"
+    external: true
+  etc-letsencrypt:
+    name: "etc-letsencrypt"
+    external: true

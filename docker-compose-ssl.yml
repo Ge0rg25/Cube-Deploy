@@ -1,0 +1,30 @@
+version: "3.8"
+name: "netrunner_ssl"
+
+
+
+services:
+
+  web-server:
+    container_name: "web-server"
+    ports:
+      - "80:80"
+      - "443:443"
+    image: nginx:latest
+    volumes:
+      - etc-letsencrypt:/etc/letsencrypt
+      - www-html:/var/www/html
+      - ./nginx/nginx-ssl.conf:/etc/nginx/conf.d/default.conf
+
+
+  certs:
+    build: .
+    volumes:
+      - www-html:/var/www/html
+      - etc-letsencrypt:/etc/letsencrypt
+
+volumes:
+  www-html:
+    name: "www-html"
+  etc-letsencrypt:
+    name: "etc-letsencrypt"

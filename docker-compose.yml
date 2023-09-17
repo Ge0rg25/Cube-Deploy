@@ -50,6 +50,8 @@ services:
   backend-database:
     container_name: "backend-database"
     image: postgres:14
+    ports:
+      - "5432:5432"
     environment:
       POSTGRES_USER: "cube"
       POSTGRES_PASSWORD: "cube"

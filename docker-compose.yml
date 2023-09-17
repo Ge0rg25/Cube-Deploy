@@ -81,7 +81,16 @@ services:
       - auth-network
     restart: always
 
-# --------------------- [ Frontend | Reverse Proxy] ---------------------
+
+  flask-client:
+    container_name: "flask-client"
+    image: ge0rg25/cube-flask-client:latest
+    networks:
+      - backend-network
+      - auth-network
+
+
+  # --------------------- [ Frontend | Reverse Proxy] ---------------------
   web-server:
     container_name: "web-server"
     ports:

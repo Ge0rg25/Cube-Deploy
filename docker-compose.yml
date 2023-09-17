@@ -85,6 +85,8 @@ services:
   flask-client:
     container_name: "flask-client"
     image: ge0rg25/cube-flask-client:latest
+    ports:
+      - "5000:5000"
     networks:
       - backend-network
       - auth-network
